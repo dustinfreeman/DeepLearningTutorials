@@ -241,7 +241,7 @@ def load_data(dataset):
         # we need them as ints (we use labels as index, and if they are
         # floats it doesn't make sense) therefore instead of returning
         # ``shared_y`` we will have to cast it to int. This little hack
-        # lets ous get around this issue
+        # lets us get around this issue
         return shared_x, T.cast(shared_y, 'int32')
 
     test_set_x, test_set_y = shared_dataset(test_set)
