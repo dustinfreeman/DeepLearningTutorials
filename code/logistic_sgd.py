@@ -466,10 +466,32 @@ def predict():
     test_set_x, test_set_y = datasets[2]
     test_set_x = test_set_x.get_value()
 
-    predicted_values = predict_model(test_set_x[:10])
+    predicted_values = predict_model(test_set_x[:])
     print("Predicted values for the first 10 examples in test set:")
     print(predicted_values)
 
+    #confusion matrix
+    ground_truth = test_set_y.eval()
+
+    n_classes = 10
+    cm = numpy.zeros((n_classes, n_classes))
+
+    ground_truth_counts = numpy.zeros(n_classes)
+
+    for i in range(len(predicted_values)):
+        predicted = predicted_values[i]
+        truth = ground_truth[i]
+        ground_truth_counts[truth] += 1
+        cm[predicted][truth] += 1
+
+    print("Confusion Matrix")
+    print("Ground Truth Counts", ground_truth_counts)
+    s = ""
+    for g in range(n_classes):
+        for t in range(n_classes):
+            s += '{:5.0f}'.format(cm[g][t])
+        s += "\n"
+    print(s)
 
 if __name__ == '__main__':
     sgd_optimization_mnist()
