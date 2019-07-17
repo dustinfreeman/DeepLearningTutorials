@@ -115,6 +115,10 @@ class LogisticRegression(object):
         # keep track of model input
         self.input = input
 
+    def set_params(self, new_params):
+        self.W = new_params[0]
+        self.b = new_params[1]
+
     def negative_log_likelihood(self, y):
         """Return the mean of the negative log-likelihood of the prediction
         of this model under a given target distribution.

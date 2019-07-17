@@ -23,7 +23,8 @@ from __future__ import print_function
 
 __docformat__ = 'restructedtext en'
 
-
+#import six.moves.cPickle as pickle
+import pickle
 import os
 import sys
 import timeit
@@ -110,6 +111,9 @@ class HiddenLayer(object):
         # parameters of the model
         self.params = [self.W, self.b]
 
+    def set_params(self, new_params):
+        self.W = new_params[0]
+        self.b = new_params[1]
 
 # start-snippet-2
 class MLP(object):
@@ -196,6 +200,11 @@ class MLP(object):
 
         # keep track of model input
         self.input = input
+
+    def set_params(self, new_params):
+        self.params = new_params
+        self.hiddenLayer.set_params(self.params[0:2])
+        self.logRegressionLayer.set_params(self.params[2:5])
 
 
 def test_mlp(learning_rate=0.01, L1_reg=0.00, L2_reg=0.0001, n_epochs=1000,
@@ -399,6 +408,13 @@ def test_mlp(learning_rate=0.01, L1_reg=0.00, L2_reg=0.0001, n_epochs=1000,
                           (epoch, minibatch_index + 1, n_train_batches,
                            test_score * 100.))
 
+                    # save the best model
+                    # https://stackoverflow.com/questions/38720780/how-to-save-model-of-mlp-in-theano-using-python
+                    print('saving model.')
+                    with open('best_model_mlp.pkl', 'wb') as f:
+                    #    pickle.dump(classifier, f)
+                         pickle.dump(classifier.params, f)
+
             if patience <= iter:
                 done_looping = True
                 break
@@ -414,6 +430,73 @@ def test_mlp(learning_rate=0.01, L1_reg=0.00, L2_reg=0.0001, n_epochs=1000,
     print('last_infer_duration %.3f' % last_infer_duration)
 
 
+def inference(n_hidden=500, batch_size=20, \
+    model_path='best_mlp_model.pkl', dataset='mnist.pkl.gz'):
+
+    #https://github.com/esmason/DeepLearningTutorials/blob/master/code/mlp.py
+    #classifier = pickle.load(open(model_path, "rb"), encoding = 'latin1')
+    #return
+
+    datasets = load_data(dataset)
+    test_set_x, test_set_y = datasets[2]
+
+    n_test_batches = test_set_x.get_value(borrow=True).shape[0] // batch_size
+
+    # allocate symbolic variables for the data
+    index = T.lscalar()  # index to a [mini]batch
+    x = T.matrix('x')  # the data is presented as rasterized images
+    y = T.ivector('y')  # the labels are presented as 1D vector of
+                        # [int] labels
+
+    rng = numpy.random.RandomState(1234)
+
+    # construct the MLP class
+    classifier = MLP(
+        rng=rng,
+        input=x,
+        n_in=28 * 28,
+        n_hidden=n_hidden,
+        n_out=10
+    )
+
+    #This line has no effect...
+    #TODO: set parameters properly
+    loaded_params = pickle.load(open(model_path))
+    print(loaded_params)
+    classifier.set_params(loaded_params)
+    #https://stackoverflow.com/questions/38720780/how-to-save-model-of-mlp-in-theano-using-python
+
+    #TODO: can we do inference all at once instead of in minibatches?
+    test_model = theano.function(
+        inputs=[index],
+        outputs=classifier.errors(y),
+        givens={
+            x: test_set_x[index * batch_size:(index + 1) * batch_size],
+            y: test_set_y[index * batch_size:(index + 1) * batch_size]
+        }
+    )
+
+    # test it on the test set
+    test_losses = [test_model(i) for i
+                   in range(n_test_batches)]
+    #print(test_losses)
+    #TODO: we ALWAYS get the same score with loaded models.
+    test_score = numpy.mean(test_losses)
+
+    print('test inference score: %f' % (test_score))
 
 if __name__ == '__main__':
-    test_mlp()
+    #test_mlp(n_epochs=1)
+    #inference()
+    #test_mlp(n_epochs=2)
+    #inference()
+    #test_mlp(n_epochs=4)
+    #inference()
+    #test_mlp(n_epochs=8)
+    #inference()
+    #test_mlp(n_epochs=16)
+    #inference()
+    test_mlp(n_hidden=100, n_epochs=16)
+    test_mlp(n_hidden=250, n_epochs=16)
+    test_mlp(n_hidden=500, n_epochs=16)
+    test_mlp(n_hidden=1000, n_epochs=16)
