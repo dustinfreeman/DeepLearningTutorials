@@ -227,6 +227,7 @@ def test_mlp(learning_rate=0.01, L1_reg=0.00, L2_reg=0.0001, n_epochs=1000,
 
 
    """
+    print('===RUNNING TEST_MLP with %i hiddens and %i epochs' % (n_hidden, n_epochs))
     datasets = load_data(dataset)
 
     train_set_x, train_set_y = datasets[0]
@@ -347,6 +348,8 @@ def test_mlp(learning_rate=0.01, L1_reg=0.00, L2_reg=0.0001, n_epochs=1000,
     epoch = 0
     done_looping = False
 
+    last_infer_duration = 0
+
     while (epoch < n_epochs) and (not done_looping):
         epoch = epoch + 1
         for minibatch_index in range(n_train_batches):
@@ -384,8 +387,11 @@ def test_mlp(learning_rate=0.01, L1_reg=0.00, L2_reg=0.0001, n_epochs=1000,
                     best_iter = iter
 
                     # test it on the test set
+                    infer_start_time = timeit.default_timer()
                     test_losses = [test_model(i) for i
                                    in range(n_test_batches)]
+                    infer_end_time = timeit.default_timer()
+                    last_infer_duration = infer_end_time - infer_start_time
                     test_score = numpy.mean(test_losses)
 
                     print(('     epoch %i, minibatch %i/%i, test error of '
@@ -404,6 +410,9 @@ def test_mlp(learning_rate=0.01, L1_reg=0.00, L2_reg=0.0001, n_epochs=1000,
     print(('The code for file ' +
            os.path.split(__file__)[1] +
            ' ran for %.2fm' % ((end_time - start_time) / 60.)), file=sys.stderr)
+    # NOTE: Sample code is measuring time in minutes, which seems confusingly non-standard.
+    print('last_infer_duration %.3f' % last_infer_duration)
+
 
 
 if __name__ == '__main__':
